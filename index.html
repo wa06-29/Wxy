@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Jellyfish导航</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        :root {
+            --day-color1: #f5f7fa;
+            --day-color2: #e4eaf5;
+            --night-color1: #1a1a2e;
+            --night-color2: #16213e;
+            --hold-border: #4299e1;
+            --text-day: #2d3748;
+            --text-night: #f0f2f5;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--day-color1) 0%, var(--day-color2) 100%);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: background 0.5s ease;
+            touch-action: manipulation;
+            overflow-x: hidden;
+        }
+
+        body.dark-mode {
+            background: linear-gradient(135deg, var(--night-color1) 0%, var(--night-color2) 100%);
+            --hold-border: #63b3ed;
+            color: var(--text-night);
+        }
+
+        .title-card {
+            width: 100%;
+            max-width: 800px;
+            padding: 40px 20px;
+            margin: 20px 0;
+            border-radius: 16px;
+            box-shadow: 12px 12px 24px rgba(174, 190, 212, 0.4), 
+                        -12px -12px 24px rgba(255, 255, 255, 0.9);
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            text-align: center;
+            transition: all 0.5s ease;
+        }
+
+        body.dark-mode .title-card {
+            box-shadow: 12px 12px 24px rgba(0, 0, 0, 0.3), 
+                        -12px -12px 24px rgba(40, 45, 65, 0.9);
+            background-color: rgba(30, 35, 55, 0.9);
+        }
+
+        .editable-title {
+            font-size: 32px;
+            color: var(--text-day);
+            margin-bottom: 20px;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: block;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body.dark-mode .editable-title {
+            color: var(--text-night);
+        }
+
+        .editable-title:hover {
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+
+        body.dark-mode .editable-title:hover {
+            background-color: rgba(50, 55, 75, 0.8);
+        }
+
+        .editable-subtitle {
+            font-size: 16px;
+            color: #5a6778;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            display: block;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.5;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body.dark-mode .editable-subtitle {
+            color: #c0c6cc;
+        }
+
+        .editable-subtitle:hover {
+            background-color: rgba(255, 255, 255, 0.8);
+            color: var(--text-day);
+        }
+
+        body.dark-mode .editable-subtitle:hover {
+            background-color: rgba(50, 55, 75, 0.8);
+            color: var(--text-night);
+        }
+
+        .nav-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 20px 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 25px;
+            padding: 20px;
+        }
+
+        .nav-btn {
+            padding: 22px 16px;
+            border: none;
+            border-radius: 14px;
+            box-shadow: 10px 10px 20px rgba(174, 190, 212, 0.4), 
+                        -10px -10px 20px rgba(255, 255, 255, 1);
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text-day);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .nav-btn.hold {
+            border: 2px solid var(--hold-border);
+            transform: scale(1.02);
+            z-index: 5;
+            box-shadow: 8px 8px 16px rgba(174, 190, 212, 0.5), 
+                        -8px -8px 16px rgba(255, 255, 255, 0.8),
+                        0 0 0 2px rgba(66, 153, 225, 0.3);
+        }
+
+        body.dark-mode .nav-btn {
+            box-shadow: 10px 10px 20px rgba(0, 0, 0, 0.3), 
+                        -10px -10px 20px rgba(40, 45, 65, 1);
+            background-color: rgba(30, 35, 55, 0.9);
+            color: var(--text-night);
+        }
+
+        body.dark-mode .nav-btn.hold {
+            box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.4), 
+                        -8px -8px 16px rgba(40, 45, 65, 0.8),
+                        0 0 0 2px rgba(99, 179, 237, 0.3);
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-3px);
+            background-color: #ffffff;
+        }
+
+        body.dark-mode .nav-btn:hover {
+            background-color: rgba(40, 45, 65, 1);
+        }
+
+        .nav-btn:active {
+            box-shadow: inset 6px 6px 12px rgba(174, 190, 212, 0.3), 
+                        inset -6px -6px 12px rgba(255, 255, 255, 0.8);
+            transform: translateY(0);
+        }
+
+        body.dark-mode .nav-btn:active {
+            box-shadow: inset 6px 6px 12px rgba(0, 0, 0, 0.25), 
+                        inset -6px -6px 12px rgba(40, 45, 65, 0.8);
+        }
+
+        .theme-toggle, .color-palette-btn {
+            position: fixed;
+            bottom: 30px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 4px 4px 8px rgba(174, 190, 212, 0.3), 
+                        -4px -4px 8px rgba(255, 255, 255, 1);
+            background-color: rgba(255, 255, 255, 0.9);
+            color: var(--text-day);
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .theme-toggle {
+            right: 30px;
+        }
+
+        .color-palette-btn {
+            left: 30px;
+        }
+
+        body.dark-mode .theme-toggle, 
+        body.dark-mode .color-palette-btn {
+            box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.3), 
+                        -4px -4px 8px rgba(40, 45, 65, 1);
+            background-color: rgba(30, 35, 55, 1);
+            color: var(--text-night);
+        }
+
+        @media (max-width: 480px) {
+            .editable-title {
+                font-size: 26px;
+                margin-bottom: 16px;
+            }
+
+            .editable-subtitle {
+                font-size: 14px;
+            }
+
+            .title-card {
+                box-shadow: 8px 8px 16px rgba(174, 190, 212, 0.4), 
+                            -8px -8px 16px rgba(255, 255, 255, 0.9);
+                padding: 30px 15px;
+            }
+
+            body.dark-mode .title-card {
+                box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.3), 
+                            -8px -8px 16px rgba(40, 45, 65, 0.9);
+            }
+
+            .nav-container {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 18px;
+                padding: 10px;
+            }
+
+            .nav-btn {
+                padding: 18px 10px;
+                font-size: 15px;
+            }
+
+            .nav-btn.hold {
+                border-width: 1.5px;
+                transform: scale(1.01);
+            }
+
+            .theme-toggle, .color-palette-btn {
+                width: 44px;
+                height: 44px;
+                bottom: 20px;
+                font-size: 16px;
+            }
+
+            .color-palette-btn {
+                left: 20px;
+            }
+        }
+    </style>
+    <head>
+  <!-- 1. 浏览器通用图标（标签页、书签） -->
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16x16.jpg">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32x32.jpg">
+  
+  <!-- 2. iOS 专属图标（主屏幕、书签） -->
+  <!-- iOS 主屏幕图标：自动适配圆角/阴影，无需手动添加 -->
+  <link rel="apple-touch-icon" sizes="87x87" href="icons/icon-87x87.jpg">
+  <link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120x120.jpg">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180x180.jpg">
+  <!-- iOS 书签描述（可选，优化显示） -->
+  <meta name="apple-mobile-web-app-title" content="Jellyfish"> <!-- iOS主屏幕图标下方文字 -->
+  <meta name="apple-mobile-web-app-capable" content="yes"> <!-- 启用iOS全屏模式（可选） -->
+  
+  <!-- 3. 安卓/通用 PWA 图标（关联manifest.json） -->
+  <link rel="manifest" href="manifest.json"> <!-- 关键：安卓桌面/APP依赖此文件 -->
+  
+  <!-- 4. 兼容性补充（旧安卓浏览器） -->
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.jpg">
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512x512.jpg">
+</head>
+</head>
+<body>
+    <div class="title-card">
+        <h1 class="editable-title" id="title">Jellyfish导航</h1>
+        <div class="editable-subtitle" id="subtitle">点击即可跳转 | By淡季水母</div>
+    </div>
+
+    <div class="nav-container" id="navContainer">
+        <!-- 本地文件跳转：用data-href存储链接，便于交换 -->
+        <button class="nav-btn" data-href="page1/page1.html">我的相册</button>
+        <button class="nav-btn" data-href="page2/page2.html">旅行记录</button>
+        <button class="nav-btn" data-href="page3/page3.html">日常笔记</button>
+        <button class="nav-btn" data-href="page4/page4.html">学习资料</button>
+        <button class="nav-btn" data-href="page5/page5.html">项目文档</button>
+        <button class="nav-btn" data-href="page6/page6.html">收藏夹</button>
+        <button class="nav-btn" data-href="page7/page7.html">关于我</button>
+       
+        <!-- 外部链接跳转 -->
+        <button class="nav-btn" data-href="https://github.com">GitHub</button>
+        <button class="nav-btn" data-href="https://baidu.com">百度</button>
+    </div>
+
+    <button class="theme-toggle" id="themeBtn">🌞</button>
+    <button class="color-palette-btn" id="colorBtn">🎨</button>
+
+    <script>
+        // -------------------------- 核心：极简长按交换逻辑 --------------------------
+        let longPressTimer = null;  // 长按计时器
+        let sourceBtn = null;       // 长按的源按钮
+        let targetBtn = null;       // 要交换的目标按钮
+        let isLongPress = false;    // 是否处于长按状态
+
+        // 1. 清除所有按钮的蓝框
+        function clearHoldClass() {
+            document.querySelectorAll('.nav-btn.hold').forEach(btn => {
+                btn.classList.remove('hold');
+            });
+        }
+
+        // 2. 交换两个按钮的文本和链接
+        function swapButtons(a, b) {
+            if (!a || !b || a === b) return;
+            // 交换文本
+            const tempText = a.textContent;
+            a.textContent = b.textContent;
+            b.textContent = tempText;
+            // 交换跳转链接
+            const tempHref = a.getAttribute('data-href');
+            a.setAttribute('data-href', b.getAttribute('data-href'));
+            b.setAttribute('data-href', tempHref);
+            // 保存配置
+            saveConfig();
+        }
+
+        // 3. 保存按钮配置到本地存储
+        function saveConfig() {
+            const config = [];
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                config.push({
+                    text: btn.textContent,
+                    href: btn.getAttribute('data-href')
+                });
+            });
+            localStorage.setItem('navConfig', JSON.stringify(config));
+        }
+           function getHtmlBtnSignature() {
+        let signature = '';
+        // 遍历HTML里所有默认按钮，拼接“文本+链接”作为标识
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            const text = btn.textContent.trim();
+            const href = btn.getAttribute('data-href').trim();
+            signature += `${text}|${href},`; // 用“|”分隔文本和链接，“,”分隔按钮
+        });
+        return signature;
+    }
+
+          // 4. 从本地存储加载配置（新增标识对比，自动检测HTML修改）
+    function loadConfig() {
+        // 1. 获取当前HTML按钮的“唯一标识”和本地存储的旧标识
+        const currentHtmlSignature = getHtmlBtnSignature();
+        const savedHtmlSignature = localStorage.getItem('htmlBtnSignature');
+        const savedBtnConfig = localStorage.getItem('navConfig');
+
+        // 2. 关键判断：HTML按钮有变化 → 清除旧配置，用新HTML按钮
+        if (currentHtmlSignature !== savedHtmlSignature) {
+            localStorage.removeItem('navConfig'); // 删掉旧按钮配置
+            localStorage.setItem('htmlBtnSignature', currentHtmlSignature); // 保存新标识
+            return; // 直接用HTML新配置，不加载旧配置
+        }
+
+        // 3. HTML没变化 → 加载用户自定义的按钮配置（如长按交换的位置）
+        if (savedBtnConfig) {
+            const btnList = document.querySelectorAll('.nav-btn');
+            JSON.parse(savedBtnConfig).forEach((item, index) => {
+                if (btnList[index]) {
+                    btnList[index].textContent = item.text;
+                    btnList[index].setAttribute('data-href', item.href);
+                }
+            });
+        }
+    }
+        // -------------------------- 新增：标题/副标题持久化逻辑 --------------------------
+        // 保存标题和副标题到本地存储
+        function saveTitleConfig() {
+            const titleText = document.getElementById('title').textContent;
+            const subtitleText = document.getElementById('subtitle').textContent;
+            localStorage.setItem('titleConfig', JSON.stringify({
+                title: titleText,
+                subtitle: subtitleText
+            }));
+        }
+
+        // 从本地存储加载标题和副标题
+        function loadTitleConfig() {
+            const savedTitleData = localStorage.getItem('titleConfig');
+            if (!savedTitleData) return;
+            const { title, subtitle } = JSON.parse(savedTitleData);
+            document.getElementById('title').textContent = title;
+            document.getElementById('subtitle').textContent = subtitle;
+        }
+
+        // 5. 绑定每个按钮的长按+点击事件（核心交互）
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            // 长按开始（鼠标按下/触摸开始）
+            btn.addEventListener('mousedown', startLongPress);
+            btn.addEventListener('touchstart', startLongPress, { passive: false });
+
+            // 长按结束（鼠标松开/触摸结束）
+            btn.addEventListener('mouseup', endLongPress);
+            btn.addEventListener('touchend', endLongPress);
+            btn.addEventListener('touchcancel', endLongPress);
+
+            // 点击跳转（非长按才触发）
+            btn.addEventListener('click', function() {
+                if (!isLongPress) {
+                    const href = this.getAttribute('data-href');
+                    if (href) window.location.href = href;
+                }
+            });
+
+            // 函数：开始长按
+            function startLongPress(e) {
+                // 处理触摸事件，获取第一个触摸点
+                if (e.type === 'touchstart') e = e.touches[0];
+                // 清除之前的计时器
+                if (longPressTimer) clearTimeout(longPressTimer);
+                // 300ms后判定为长按
+                longPressTimer = setTimeout(() => {
+                    isLongPress = true;
+                    sourceBtn = btn;          // 记录源按钮
+                    sourceBtn.classList.add('hold'); // 源按钮加蓝框
+                    // 绑定滑动检测（只在长按后绑定）
+                    document.addEventListener('mousemove', detectTarget);
+                    document.addEventListener('touchmove', detectTarget, { passive: false });
+                }, 300);
+            }
+
+            // 函数：结束长按
+            function endLongPress() {
+                clearTimeout(longPressTimer);
+                // 如果是长按状态，执行交换
+                if (isLongPress) {
+                    swapButtons(sourceBtn, targetBtn);
+                }
+                // 重置所有状态
+                isLongPress = false;
+                sourceBtn = null;
+                targetBtn = null;
+                clearHoldClass();
+                // 移除滑动检测
+                document.removeEventListener('mousemove', detectTarget);
+                document.removeEventListener('touchmove', detectTarget);
+            }
+        });
+
+        // 6. 滑动时检测目标按钮（实时高亮）
+        function detectTarget(e) {
+            e.preventDefault(); // 阻止页面滚动，确保检测精准
+            // 处理触摸坐标
+            if (e.type === 'touchmove') e = e.touches[0];
+            // 找到当前坐标下的按钮
+            const hoverBtn = document.elementFromPoint(e.clientX, e.clientY)?.closest('.nav-btn');
+            // 如果找到按钮且不是源按钮，更新目标按钮
+            if (hoverBtn && hoverBtn !== sourceBtn) {
+                // 清除之前的目标蓝框
+                if (targetBtn) targetBtn.classList.remove('hold');
+                // 更新目标按钮并加蓝框
+                targetBtn = hoverBtn;
+                targetBtn.classList.add('hold');
+            }
+        }
+
+        // -------------------------- 原有辅助功能（保留并补充标题保存） --------------------------
+        // 标题修改（补充保存逻辑）
+        document.getElementById('title').addEventListener('click', () => {
+            const newTitle = prompt('请输入新标题：', document.getElementById('title').textContent);
+            if (newTitle?.trim()) {
+                document.getElementById('title').textContent = newTitle.trim();
+                saveTitleConfig(); // 新增：保存标题到本地
+            }
+        });
+
+        // 副标题修改（补充保存逻辑）
+        document.getElementById('subtitle').addEventListener('click', () => {
+            const newSub = prompt('请输入新描述：', document.getElementById('subtitle').textContent);
+            if (newSub?.trim()) {
+                document.getElementById('subtitle').textContent = newSub.trim();
+                saveTitleConfig(); // 新增：保存副标题到本地
+            }
+        });
+
+        // 昼夜模式
+        const themeBtn = document.getElementById('themeBtn');
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.body.classList.add('dark-mode');
+                themeBtn.textContent = '🌙';
+            } else {
+                themeBtn.textContent = '🌞';
+            }
+        }
+
+        themeBtn.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            themeBtn.textContent = isDark ? '🌙' : '🌞';
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        });
+
+        // 背景调色盘
+        const colorBtn = document.getElementById('colorBtn');
+        const root = document.documentElement;
+        function initColors() {
+            const day1 = localStorage.getItem('dayColor1') || '#f5f7fa';
+            const day2 = localStorage.getItem('dayColor2') || '#e4eaf5';
+            const night1 = localStorage.getItem('nightColor1') || '#1a1a2e';
+            const night2 = localStorage.getItem('nightColor2') || '#16213e';
+            
+            root.style.setProperty('--day-color1', day1);
+            root.style.setProperty('--day-color2', day2);
+            root.style.setProperty('--night-color1', night1);
+            root.style.setProperty('--night-color2', night2);
+        }
+
+        colorBtn.addEventListener('click', () => {
+            const currentDay1 = getComputedStyle(root).getPropertyValue('--day-color1').trim();
+            const currentDay2 = getComputedStyle(root).getPropertyValue('--day-color2').trim();
+            const currentNight1 = getComputedStyle(root).getPropertyValue('--night-color1').trim();
+            const currentNight2 = getComputedStyle(root).getPropertyValue('--night-color2').trim();
+
+            const newDay1 = prompt('输入日间渐变颜色1（例：#f5f7fa）：', currentDay1);
+            const newDay2 = prompt('输入日间渐变颜色2（例：#e4eaf5）：', currentDay2);
+            const newNight1 = prompt('输入夜间渐变颜色1（例：#1a1a2e）：', currentNight1);
+            const newNight2 = prompt('输入夜间渐变颜色2（例：#16213e）：', currentNight2);
+
+            const isHex = (color) => /^#([0-9A-F]{3}|[0-9A-F]{6})$/i.test(color);
+            if (newDay1 && isHex(newDay1)) {
+                root.style.setProperty('--day-color1', newDay1);
+                localStorage.setItem('dayColor1', newDay1);
+            }
+            if (newDay2 && isHex(newDay2)) {
+                root.style.setProperty('--day-color2', newDay2);
+                localStorage.setItem('dayColor2', newDay2);
+            }
+            if (newNight1 && isHex(newNight1)) {
+                root.style.setProperty('--night-color1', newNight1);
+                localStorage.setItem('nightColor1', newNight1);
+            }
+            if (newNight2 && isHex(newNight2)) {
+                root.style.setProperty('--night-color2', newNight2);
+                localStorage.setItem('nightColor2', newNight2);
+            }
+        });
+
+        // 页面加载时初始化（调整顺序：先加载标题，再加载按钮）
+        window.addEventListener('load', () => {
+            loadTitleConfig(); // 新增：优先加载标题配置
+            loadConfig();      // 原有：加载按钮配置
+            initTheme();
+            initColors();
+        });
+    </script>
+</body>
+</html>
